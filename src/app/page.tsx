@@ -34,7 +34,7 @@ export default function Home() {
 
       <div className="grid md:grid-cols-3 gap-6 mb-16">
         <a
-          href="https://discord.gg/your-invite"
+          href="https://discord.gg/wbwYc2b3KG"
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-col items-center p-8 bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-colors group"
@@ -49,7 +49,7 @@ export default function Home() {
         </a>
 
         <a
-          href="https://youtube.com/@your-channel"
+          href="https://www.youtube.com/@TeamBulgaria40k"
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-col items-center p-8 bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-colors group"

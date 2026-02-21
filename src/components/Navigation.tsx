@@ -53,7 +53,7 @@ export default function Navigation() {
 
           <div className="hidden md:flex items-center gap-4">
             <a
-              href="https://discord.gg/your-invite"
+              href="https://discord.gg/wbwYc2b3KG"
               target="_blank"
               rel="noopener noreferrer"
               className="text-zinc-400 hover:text-white transition-colors"
@@ -63,7 +63,7 @@ export default function Navigation() {
               </svg>
             </a>
             <a
-              href="https://youtube.com/@your-channel"
+              href="https://www.youtube.com/@TeamBulgaria40k"
               target="_blank"
               rel="noopener noreferrer"
               className="text-zinc-400 hover:text-white transition-colors"
