@@ -13,11 +13,16 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchData() {
-      const today = new Date().toISOString().split('T')[0]
+      const today = new Date()
+      const todayStr = today.toISOString().split('T')[0]
+      
+      const nextWeek = new Date(today)
+      nextWeek.setDate(nextWeek.getDate() + 7)
+      const nextWeekStr = nextWeek.toISOString().split('T')[0]
       
       const [newsRes, eventsRes] = await Promise.all([
         supabase.from('news_posts').select('*').order('published_at', { ascending: false }).limit(3),
-        supabase.from('events').select('*').gte('event_date', today).order('event_date', { ascending: true }).limit(5)
+        supabase.from('events').select('*').gte('event_date', todayStr).lte('event_date', nextWeekStr).order('event_date', { ascending: true }).limit(5)
       ])
       
       if (newsRes.data) setRecentNews(newsRes.data as NewsPost[])
