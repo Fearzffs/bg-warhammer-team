@@ -460,7 +460,8 @@ function MatchEditor({
   const [matchDate, setMatchDate] = useState(match?.match_date || new Date().toISOString().split('T')[0])
   const [deploymentType, setDeploymentType] = useState(match?.deployment_type || '')
   const [tableNumber, setTableNumber] = useState(match?.table_number?.toString() || '')
-  const [normalPoints, setNormalPoints] = useState(match?.normal_points?.toString() || '')
+  const [normalPointsFor, setNormalPointsFor] = useState(match?.normal_points_for?.toString() || '')
+  const [normalPointsAgainst, setNormalPointsAgainst] = useState(match?.normal_points_against?.toString() || '')
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
@@ -500,7 +501,8 @@ function MatchEditor({
       match_date: matchDate,
       deployment_type: deploymentType || null,
       table_number: tableNumber ? parseInt(tableNumber) : null,
-      normal_points: normalPoints ? parseInt(normalPoints) : null,
+      normal_points_for: normalPointsFor ? parseInt(normalPointsFor) : null,
+      normal_points_against: normalPointsAgainst ? parseInt(normalPointsAgainst) : null,
     }
 
     let error
@@ -587,7 +589,7 @@ function MatchEditor({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Points For *</label>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">WTC Points For *</label>
               <input
                 type="number"
                 value={pointsFor}
@@ -603,7 +605,7 @@ function MatchEditor({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Points Against *</label>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">WTC Points Against *</label>
               <input
                 type="number"
                 value={pointsAgainst}
@@ -667,12 +669,23 @@ function MatchEditor({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Normal Points</label>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Normal Points For</label>
               <input
                 type="number"
-                value={normalPoints}
-                onChange={(e) => setNormalPoints(e.target.value)}
-                placeholder="e.g., 85-12"
+                value={normalPointsFor}
+                onChange={(e) => setNormalPointsFor(e.target.value)}
+                placeholder="e.g., 85"
+                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Normal Points Against</label>
+              <input
+                type="number"
+                value={normalPointsAgainst}
+                onChange={(e) => setNormalPointsAgainst(e.target.value)}
+                placeholder="e.g., 12"
                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
               />
             </div>
@@ -764,6 +777,7 @@ function UsersTab() {
                 <span className={`px-2 py-1 rounded text-xs font-medium ${
                   user.role === 'admin' ? 'bg-purple-500/20 text-purple-400' :
                   user.role === 'team_member' ? 'bg-emerald-500/20 text-emerald-400' :
+                  user.role === 'tryout' ? 'bg-blue-500/20 text-blue-400' :
                   'bg-zinc-500/20 text-zinc-400'
                 }`}>
                   {user.role}
@@ -775,6 +789,7 @@ function UsersTab() {
                   onChange={(e) => updateRole(user.id, e.target.value)}
                   className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm text-white"
                 >
+                  <option value="guest">Guest</option>
                   <option value="tryout">Tryout</option>
                   <option value="team_member">Team Member</option>
                   <option value="admin">Admin</option>

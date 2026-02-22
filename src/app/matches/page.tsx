@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { Match, Player, Team } from '@/types/database'
 import { useAuth } from '@/contexts/AuthContext'
+import { ChevronDown, ChevronUp, X } from 'lucide-react'
 
 export default function MatchesPage() {
   const [matches, setMatches] = useState<Match[]>([])
@@ -12,6 +13,7 @@ export default function MatchesPage() {
   const [loading, setLoading] = useState(true)
   const [filterPlayer, setFilterPlayer] = useState('')
   const [filterTeam, setFilterTeam] = useState('')
+  const [expandedMatch, setExpandedMatch] = useState<string | null>(null)
   const { profile } = useAuth()
   const supabase = createClient()
 
@@ -127,41 +129,84 @@ export default function MatchesPage() {
           <p className="text-zinc-500">No matches found.</p>
         </div>
       ) : (
-        <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-zinc-800">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Date</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Player</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Opponent</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Team</th>
-                  <th className="px-4 py-3 text-center text-sm font-medium text-zinc-400">Score</th>
-                  <th className="px-4 py-3 text-center text-sm font-medium text-zinc-400">Result</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Mission</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800">
-                {matches.map((match) => (
-                  <tr key={match.id}>
-                    <td className="px-4 py-3 text-white">
+        <div className="space-y-2">
+          {matches.map((match) => (
+            <div key={match.id}>
+              <div 
+                className={`bg-zinc-900 rounded-xl border border-zinc-800 cursor-pointer hover:border-zinc-700 transition-colors ${
+                  expandedMatch === match.id ? 'rounded-b-none border-b-0' : ''
+                }`}
+                onClick={() => setExpandedMatch(expandedMatch === match.id ? null : match.id)}
+              >
+                <div className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-6">
+                    <span className="text-zinc-400 text-sm w-24">
                       {new Date(match.match_date).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-white font-medium">{getPlayerName(match.player_id)}</td>
-                    <td className="px-4 py-3 text-zinc-400">{match.opponent_name}</td>
-                    <td className="px-4 py-3 text-zinc-400">{match.opponent_team || '-'}</td>
-                    <td className="px-4 py-3 text-center text-white">
+                    </span>
+                    <span className="text-white font-medium w-32">{getPlayerName(match.player_id)}</span>
+                    <span className="text-zinc-400 w-32">vs {match.opponent_name}</span>
+                    <span className="text-zinc-500 w-24">{match.opponent_team || '-'}</span>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <span className="text-white font-semibold w-20 text-center">
                       {match.points_for} - {match.points_against}
-                    </td>
-                    <td className="px-4 py-3 text-center">
+                    </span>
+                    <div className="w-28">
                       <ResultBadge result={match.result} />
-                    </td>
-                    <td className="px-4 py-3 text-zinc-500 text-sm">{match.mission || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                    <span className="text-zinc-500 w-32">{match.mission || '-'}</span>
+                    {expandedMatch === match.id ? (
+                      <ChevronUp className="w-5 h-5 text-zinc-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-zinc-400" />
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {expandedMatch === match.id && (
+                <div className="bg-zinc-800 rounded-b-xl border-t-0 border-x-zinc-800 border-b-zinc-800 p-6 -mt-px">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div>
+                      <h4 className="text-zinc-500 text-sm mb-1">Event</h4>
+                      <p className="text-white">{match.event_name || '-'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-zinc-500 text-sm mb-1">Deployment</h4>
+                      <p className="text-white">{match.deployment_type || '-'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-zinc-500 text-sm mb-1">Table</h4>
+                      <p className="text-white">{match.table_number || '-'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-zinc-500 text-sm mb-1">Normal Points</h4>
+                      <p className="text-white">
+                        {match.normal_points_for || match.normal_points ? match.normal_points_for || match.normal_points : '-'}
+                        {' - '}
+                        {match.normal_points_against ? match.normal_points_against : '-'}
+                      </p>
+                    </div>
+                    
+                    <div className="col-span-2 md:col-span-4">
+                      <h4 className="text-zinc-500 text-sm mb-1">Your Army List</h4>
+                      <pre className="bg-zinc-900 p-3 rounded-lg text-zinc-300 text-sm overflow-x-auto whitespace-pre-wrap font-mono">
+                        {match.army_list || 'No army list recorded'}
+                      </pre>
+                    </div>
+                    
+                    <div className="col-span-2 md:col-span-4">
+                      <h4 className="text-zinc-500 text-sm mb-1">Opponent Army</h4>
+                      <p className="text-white mb-2">{match.opponent_army || '-'}</p>
+                      <pre className="bg-zinc-900 p-3 rounded-lg text-zinc-300 text-sm overflow-x-auto whitespace-pre-wrap font-mono">
+                        {match.opponent_army_list || 'No army list recorded'}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>

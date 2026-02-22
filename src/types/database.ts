@@ -38,6 +38,8 @@ export interface Match {
   deployment_type: string | null
   table_number: number | null
   normal_points: number | null
+  normal_points_for: number | null
+  normal_points_against: number | null
 }
 
 export interface NewsPost {
