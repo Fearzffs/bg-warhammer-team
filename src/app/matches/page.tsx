@@ -182,7 +182,7 @@ export default function MatchesPage() {
                     <div>
                       <h4 className="text-zinc-500 text-sm mb-1">Normal Points</h4>
                       <p className="text-white">
-                        {match.normal_points_for || match.normal_points ? match.normal_points_for || match.normal_points : '-'}
+                        {match.normal_points_for ? match.normal_points_for : '-'}
                         {' - '}
                         {match.normal_points_against ? match.normal_points_against : '-'}
                       </p>

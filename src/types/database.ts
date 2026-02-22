@@ -37,7 +37,6 @@ export interface Match {
   opponent_army_list: string | null
   deployment_type: string | null
   table_number: number | null
-  normal_points: number | null
   normal_points_for: number | null
   normal_points_against: number | null
 }
@@ -72,4 +71,13 @@ export interface PlayerStats {
   small_losses: number
   big_losses: number
   win_rate: number
+}
+
+export interface Event {
+  id: string
+  title: string
+  content: string | null
+  event_date: string
+  event_time: string | null
+  created_at: string
 }

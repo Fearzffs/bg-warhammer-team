@@ -2,23 +2,28 @@
 
 import { createClient } from '@/lib/supabase'
 import { useEffect, useState } from 'react'
-import { NewsPost } from '@/types/database'
+import { NewsPost, Event } from '@/types/database'
 import Link from 'next/link'
+import { Calendar, ChevronRight } from 'lucide-react'
 
 export default function Home() {
   const [recentNews, setRecentNews] = useState<NewsPost[]>([])
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([])
   const supabase = createClient()
 
   useEffect(() => {
-    async function fetchNews() {
-      const { data } = await supabase
-        .from('news_posts')
-        .select('*')
-        .order('published_at', { ascending: false })
-        .limit(3)
-      if (data) setRecentNews(data as NewsPost[])
+    async function fetchData() {
+      const today = new Date().toISOString().split('T')[0]
+      
+      const [newsRes, eventsRes] = await Promise.all([
+        supabase.from('news_posts').select('*').order('published_at', { ascending: false }).limit(3),
+        supabase.from('events').select('*').gte('event_date', today).order('event_date', { ascending: true }).limit(5)
+      ])
+      
+      if (newsRes.data) setRecentNews(newsRes.data as NewsPost[])
+      if (eventsRes.data) setUpcomingEvents(eventsRes.data as Event[])
     }
-    fetchNews()
+    fetchData()
   }, [])
 
   return (
@@ -76,6 +81,51 @@ export default function Home() {
           <span className="text-zinc-500 mt-2">View team statistics</span>
         </Link>
       </div>
+
+      {upcomingEvents.length > 0 && (
+        <div className="mb-16">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+              <Calendar className="w-6 h-6 text-emerald-400" />
+              Upcoming Events
+            </h2>
+            <Link href="/calendar" className="text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1">
+              View Calendar <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {upcomingEvents.map((event) => (
+              <div
+                key={event.id}
+                className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-xl border border-zinc-700 p-5 hover:border-emerald-500/50 transition-all group"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="bg-emerald-500/20 rounded-lg p-2">
+                    <Calendar className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-1 rounded">
+                    {new Date(event.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+                <h3 className="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors">
+                  {event.title}
+                </h3>
+                {event.event_time && (
+                  <p className="text-zinc-500 text-sm mt-1">
+                    {event.event_time}
+                  </p>
+                )}
+                {event.content && (
+                  <p className="text-zinc-400 text-sm mt-2 line-clamp-2">
+                    {event.content}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-8">
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">

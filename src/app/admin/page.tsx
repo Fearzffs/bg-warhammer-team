@@ -1,12 +1,12 @@
 'use client'
 
 import { createClient } from '@/lib/supabase'
-import { Player, Match, Profile, Team } from '@/types/database'
+import { Player, Match, Profile, Team, Event } from '@/types/database'
 import { useAuth } from '@/contexts/AuthContext'
-import { Plus, Trash2, Edit, X, Shield, User, UserPlus } from 'lucide-react'
+import { Plus, Trash2, Edit, X, Shield, User, UserPlus, Calendar } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-type Tab = 'players' | 'matches' | 'users' | 'teams'
+type Tab = 'players' | 'matches' | 'users' | 'teams' | 'events'
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>('players')
@@ -51,12 +51,19 @@ export default function AdminPage() {
           icon={<Shield className="w-4 h-4" />}
           label="Teams"
         />
+        <TabButton
+          active={activeTab === 'events'}
+          onClick={() => setActiveTab('events')}
+          icon={<Calendar className="w-4 h-4" />}
+          label="Events"
+        />
       </div>
 
       {activeTab === 'players' && <PlayersTab />}
       {activeTab === 'matches' && <MatchesTab />}
       {activeTab === 'users' && <UsersTab />}
       {activeTab === 'teams' && <TeamsTab />}
+      {activeTab === 'events' && <EventsTab />}
     </div>
   )
 }
@@ -936,7 +943,7 @@ function TeamEditor({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <h2 className="text-xl font-bold text-white">{team ? 'Edit Team' : 'Add Team'}</h2>
 
-          <div>
+            <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Team Name *</label>
             <input
               type="text"
@@ -944,6 +951,201 @@ function TeamEditor({
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="e.g., Germany, France, USA"
+              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={onClose} className="flex-1 py-2 border border-zinc-700 text-zinc-400 rounded-lg">
+              Cancel
+            </button>
+            <button type="submit" disabled={loading} className="flex-1 py-2 bg-emerald-600 text-white rounded-lg disabled:opacity-50">
+              {loading ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function EventsTab() {
+  const [events, setEvents] = useState<Event[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showEditor, setShowEditor] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null)
+  const supabase = createClient()
+
+  useEffect(() => {
+    fetchEvents()
+  }, [])
+
+  async function fetchEvents() {
+    const { data } = await supabase.from('events').select('*').order('event_date', { ascending: true })
+    if (data) setEvents(data as Event[])
+    setLoading(false)
+  }
+
+  async function deleteEvent(id: string) {
+    if (!confirm('Are you sure you want to delete this event?')) return
+    await supabase.from('events').delete().eq('id', id)
+    fetchEvents()
+  }
+
+  if (loading) return <div className="animate-pulse h-64 bg-zinc-900 rounded-xl" />
+
+  return (
+    <div>
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => {
+            setEditingEvent(null)
+            setShowEditor(true)
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+        >
+          <Plus className="w-4 h-4" />
+          Add Event
+        </button>
+      </div>
+
+      {events.length === 0 ? (
+        <div className="text-center py-8 text-zinc-500">No events yet</div>
+      ) : (
+        <div className="space-y-3">
+          {events.map((event) => (
+            <div key={event.id} className="flex items-center justify-between p-4 bg-zinc-900 rounded-xl border border-zinc-800">
+              <div>
+                <h3 className="text-white font-medium">{event.title}</h3>
+                <p className="text-zinc-500 text-sm">
+                  {new Date(event.event_date).toLocaleDateString()}
+                  {event.event_time && ` at ${event.event_time}`}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setEditingEvent(event)
+                    setShowEditor(true)
+                  }}
+                  className="p-2 text-zinc-400 hover:text-white"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => deleteEvent(event.id)}
+                  className="p-2 text-zinc-400 hover:text-red-400"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showEditor && (
+        <EventEditor
+          event={editingEvent}
+          onClose={() => {
+            setShowEditor(false)
+            setEditingEvent(null)
+          }}
+          onSave={() => {
+            setShowEditor(false)
+            setEditingEvent(null)
+            fetchEvents()
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function EventEditor({
+  event,
+  onClose,
+  onSave,
+}: {
+  event: Event | null
+  onClose: () => void
+  onSave: () => void
+}) {
+  const [title, setTitle] = useState(event?.title || '')
+  const [content, setContent] = useState(event?.content || '')
+  const [eventDate, setEventDate] = useState(event?.event_date || new Date().toISOString().split('T')[0])
+  const [eventTime, setEventTime] = useState(event?.event_time || '')
+  const [loading, setLoading] = useState(false)
+  const supabase = createClient()
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+
+    const data = {
+      title,
+      content: content || null,
+      event_date: eventDate,
+      event_time: eventTime || null,
+    }
+
+    let error
+    if (event) {
+      ({ error } = await supabase.from('events').update(data).eq('id', event.id))
+    } else {
+      ({ error } = await supabase.from('events').insert(data))
+    }
+
+    setLoading(false)
+    if (!error) onSave()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+      <div className="bg-zinc-900 rounded-xl border border-zinc-800 w-full max-w-md">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <h2 className="text-xl font-bold text-white">{event ? 'Edit Event' : 'Add Event'}</h2>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Title *</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              placeholder="e.g., Team Practice, Tournament"
+              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Description</label>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={4}
+              placeholder="Event details..."
+              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Date *</label>
+            <input
+              type="date"
+              value={eventDate}
+              onChange={(e) => setEventDate(e.target.value)}
+              required
+              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Time</label>
+            <input
+              type="time"
+              value={eventTime}
+              onChange={(e) => setEventTime(e.target.value)}
               className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
             />
           </div>

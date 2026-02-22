@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { Youtube, Gamepad2, FileText, Users, LogOut, Menu, X, Shield } from 'lucide-react'
+import { Youtube, Gamepad2, FileText, Users, LogOut, Menu, X, Shield, Calendar } from 'lucide-react'
 import { useState } from 'react'
 
 export default function Navigation() {
@@ -16,6 +16,7 @@ export default function Navigation() {
 
   const navLinks = [
     { href: '/', label: 'Home', icon: Gamepad2 },
+    { href: '/calendar', label: 'Calendar', icon: Calendar },
     { href: '/news', label: 'News', icon: FileText },
     { href: '/players', label: 'Players', icon: Users },
     { href: '/matches', label: 'Matches', icon: Shield },
