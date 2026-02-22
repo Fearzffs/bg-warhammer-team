@@ -1,4 +1,9 @@
-export type UserRole = 'admin' | 'team_member' | 'tryout'
+export type UserRole = 'admin' | 'team_member' | 'tryout' | 'guest'
+
+export interface Team {
+  id: string
+  name: string
+}
 
 export interface Profile {
   id: string
@@ -28,6 +33,11 @@ export interface Match {
   event_name: string | null
   match_date: string
   created_at: string
+  opponent_team: string | null
+  opponent_army_list: string | null
+  deployment_type: string | null
+  table_number: number | null
+  normal_points: number | null
 }
 
 export interface NewsPost {

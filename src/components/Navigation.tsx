@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { Youtube, Gamepad2, FileText, Users, LogOut, Menu, X } from 'lucide-react'
+import { Youtube, Gamepad2, FileText, Users, LogOut, Menu, X, Shield } from 'lucide-react'
 import { useState } from 'react'
 
 export default function Navigation() {
@@ -12,12 +12,13 @@ export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const isAdmin = profile?.role === 'admin'
-  const isTeamMember = profile?.role === 'admin' || profile?.role === 'team_member' || profile?.role === 'tryout'
+  const isLoggedIn = profile?.role === 'admin' || profile?.role === 'team_member' || profile?.role === 'tryout'
 
   const navLinks = [
     { href: '/', label: 'Home', icon: Gamepad2 },
     { href: '/news', label: 'News', icon: FileText },
     { href: '/players', label: 'Players', icon: Users },
+    { href: '/matches', label: 'Matches', icon: Shield },
     { href: '/documents', label: 'Documents', icon: FileText },
   ]
 

@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
-import { Player, Match, Profile } from '@/types/database'
+import { Player, Match, Profile, Team } from '@/types/database'
 import { useAuth } from '@/contexts/AuthContext'
 import { Plus, Trash2, Edit, X, Shield, User, UserPlus } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
-type Tab = 'players' | 'matches' | 'users'
+type Tab = 'players' | 'matches' | 'users' | 'teams'
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>('players')
@@ -45,11 +45,18 @@ export default function AdminPage() {
           icon={<UserPlus className="w-4 h-4" />}
           label="Users"
         />
+        <TabButton
+          active={activeTab === 'teams'}
+          onClick={() => setActiveTab('teams')}
+          icon={<Shield className="w-4 h-4" />}
+          label="Teams"
+        />
       </div>
 
       {activeTab === 'players' && <PlayersTab />}
       {activeTab === 'matches' && <MatchesTab />}
       {activeTab === 'users' && <UsersTab />}
+      {activeTab === 'teams' && <TeamsTab />}
     </div>
   )
 }
@@ -270,13 +277,14 @@ function PlayerEditor({
 function MatchesTab() {
   const [matches, setMatches] = useState<Match[]>([])
   const [players, setPlayers] = useState<Player[]>([])
+  const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
   const [showEditor, setShowEditor] = useState(false)
   const [editingMatch, setEditingMatch] = useState<Match | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
-    Promise.all([fetchMatches(), fetchPlayers()])
+    Promise.all([fetchMatches(), fetchPlayers(), fetchTeams()])
   }, [])
 
   async function fetchMatches() {
@@ -292,6 +300,11 @@ function MatchesTab() {
   async function fetchPlayers() {
     const { data } = await supabase.from('players').select('*').order('name')
     if (data) setPlayers(data as Player[])
+  }
+
+  async function fetchTeams() {
+    const { data } = await supabase.from('teams').select('*').order('name')
+    if (data) setTeams(data as Team[])
   }
 
   async function deleteMatch(id: string) {
@@ -380,6 +393,7 @@ function MatchesTab() {
         <MatchEditor
           match={editingMatch}
           players={players}
+          teams={teams}
           onClose={() => {
             setShowEditor(false)
             setEditingMatch(null)
@@ -422,17 +436,21 @@ function ResultBadge({ result }: { result: string }) {
 function MatchEditor({
   match,
   players,
+  teams,
   onClose,
   onSave,
 }: {
   match: Match | null
   players: Player[]
+  teams: Team[]
   onClose: () => void
   onSave: () => void
 }) {
   const [playerId, setPlayerId] = useState(match?.player_id || '')
   const [opponentName, setOpponentName] = useState(match?.opponent_name || '')
+  const [opponentTeam, setOpponentTeam] = useState(match?.opponent_team || '')
   const [opponentArmy, setOpponentArmy] = useState(match?.opponent_army || '')
+  const [opponentArmyList, setOpponentArmyList] = useState(match?.opponent_army_list || '')
   const [pointsFor, setPointsFor] = useState(match?.points_for?.toString() || '')
   const [pointsAgainst, setPointsAgainst] = useState(match?.points_against?.toString() || '')
   const [result, setResult] = useState<Match['result']>(match?.result || 'draw')
@@ -440,6 +458,9 @@ function MatchEditor({
   const [mission, setMission] = useState(match?.mission || '')
   const [eventName, setEventName] = useState(match?.event_name || '')
   const [matchDate, setMatchDate] = useState(match?.match_date || new Date().toISOString().split('T')[0])
+  const [deploymentType, setDeploymentType] = useState(match?.deployment_type || '')
+  const [tableNumber, setTableNumber] = useState(match?.table_number?.toString() || '')
+  const [normalPoints, setNormalPoints] = useState(match?.normal_points?.toString() || '')
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
@@ -467,7 +488,9 @@ function MatchEditor({
     const data = {
       player_id: playerId,
       opponent_name: opponentName,
+      opponent_team: opponentTeam || null,
       opponent_army: opponentArmy || null,
+      opponent_army_list: opponentArmyList || null,
       points_for: parseInt(pointsFor),
       points_against: parseInt(pointsAgainst),
       result,
@@ -475,6 +498,9 @@ function MatchEditor({
       mission: mission || null,
       event_name: eventName || null,
       match_date: matchDate,
+      deployment_type: deploymentType || null,
+      table_number: tableNumber ? parseInt(tableNumber) : null,
+      normal_points: normalPoints ? parseInt(normalPoints) : null,
     }
 
     let error
@@ -547,6 +573,20 @@ function MatchEditor({
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Opponent Team</label>
+              <select
+                value={opponentTeam}
+                onChange={(e) => setOpponentTeam(e.target.value)}
+                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
+              >
+                <option value="">Select Team</option>
+                {teams.map((team) => (
+                  <option key={team.id} value={team.name}>{team.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-zinc-400 mb-1">Points For *</label>
               <input
                 type="number"
@@ -603,6 +643,40 @@ function MatchEditor({
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Deployment Type</label>
+              <input
+                type="text"
+                value={deploymentType}
+                onChange={(e) => setDeploymentType(e.target.value)}
+                placeholder="e.g., Search & Destroy"
+                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Table Number (1-8)</label>
+              <input
+                type="number"
+                value={tableNumber}
+                onChange={(e) => setTableNumber(e.target.value)}
+                min="1"
+                max="8"
+                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Normal Points</label>
+              <input
+                type="number"
+                value={normalPoints}
+                onChange={(e) => setNormalPoints(e.target.value)}
+                placeholder="e.g., 85-12"
+                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
+              />
+            </div>
+
             <div className="col-span-2">
               <label className="block text-sm font-medium text-zinc-400 mb-1">Mission</label>
               <input
@@ -620,6 +694,17 @@ function MatchEditor({
                 onChange={(e) => setArmyList(e.target.value)}
                 rows={6}
                 placeholder="Enter your army list here..."
+                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white resize-none font-mono text-sm"
+              />
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Opponent Army List</label>
+              <textarea
+                value={opponentArmyList}
+                onChange={(e) => setOpponentArmyList(e.target.value)}
+                rows={6}
+                placeholder="Enter opponent's army list here..."
                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white resize-none font-mono text-sm"
               />
             </div>
@@ -699,6 +784,165 @@ function UsersTab() {
           ))}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+function TeamsTab() {
+  const [teams, setTeams] = useState<Team[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showEditor, setShowEditor] = useState(false)
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null)
+  const supabase = createClient()
+
+  useEffect(() => {
+    fetchTeams()
+  }, [])
+
+  async function fetchTeams() {
+    const { data } = await supabase.from('teams').select('*').order('name')
+    if (data) setTeams(data as Team[])
+    setLoading(false)
+  }
+
+  async function deleteTeam(id: string) {
+    if (!confirm('Are you sure you want to delete this team?')) return
+    await supabase.from('teams').delete().eq('id', id)
+    fetchTeams()
+  }
+
+  if (loading) return <div className="animate-pulse h-64 bg-zinc-900 rounded-xl" />
+
+  return (
+    <div>
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => {
+            setEditingTeam(null)
+            setShowEditor(true)
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+        >
+          <Plus className="w-4 h-4" />
+          Add Team
+        </button>
+      </div>
+
+      {teams.length === 0 ? (
+        <div className="text-center py-8 text-zinc-500">No teams yet</div>
+      ) : (
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-zinc-800">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Team Name</th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-zinc-400">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800">
+              {teams.map((team) => (
+                <tr key={team.id}>
+                  <td className="px-4 py-3 text-white">{team.name}</td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingTeam(team)
+                          setShowEditor(true)
+                        }}
+                        className="p-1 text-zinc-400 hover:text-white"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteTeam(team.id)}
+                        className="p-1 text-zinc-400 hover:text-red-400"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showEditor && (
+        <TeamEditor
+          team={editingTeam}
+          onClose={() => {
+            setShowEditor(false)
+            setEditingTeam(null)
+          }}
+          onSave={() => {
+            setShowEditor(false)
+            setEditingTeam(null)
+            fetchTeams()
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function TeamEditor({
+  team,
+  onClose,
+  onSave,
+}: {
+  team: Team | null
+  onClose: () => void
+  onSave: () => void
+}) {
+  const [name, setName] = useState(team?.name || '')
+  const [loading, setLoading] = useState(false)
+  const supabase = createClient()
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+
+    let error
+    if (team) {
+      ({ error } = await supabase.from('teams').update({ name }).eq('id', team.id))
+    } else {
+      ({ error } = await supabase.from('teams').insert({ name }))
+    }
+
+    setLoading(false)
+    if (!error) onSave()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+      <div className="bg-zinc-900 rounded-xl border border-zinc-800 w-full max-w-md">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <h2 className="text-xl font-bold text-white">{team ? 'Edit Team' : 'Add Team'}</h2>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Team Name *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              placeholder="e.g., Germany, France, USA"
+              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={onClose} className="flex-1 py-2 border border-zinc-700 text-zinc-400 rounded-lg">
+              Cancel
+            </button>
+            <button type="submit" disabled={loading} className="flex-1 py-2 bg-emerald-600 text-white rounded-lg disabled:opacity-50">
+              {loading ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
