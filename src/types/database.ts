@@ -5,6 +5,14 @@ export interface Team {
   name: string
 }
 
+export interface TeamMatch {
+  id: string
+  opponent_team: string
+  date: string
+  draw_diff: number
+  created_at: string
+}
+
 export interface Profile {
   id: string
   email: string
@@ -17,8 +25,12 @@ export interface Player {
   name: string
   nickname: string | null
   army: string | null
+  role: string | null
   created_at: string
 }
+
+export type MatchResult = 'big_win' | 'small_win' | 'draw' | 'small_loss' | 'big_loss'
+export type Prediction = 'big_win' | 'small_win' | 'draw' | 'small_loss' | 'big_loss'
 
 export interface Match {
   id: string
@@ -27,7 +39,7 @@ export interface Match {
   opponent_army: string | null
   points_for: number
   points_against: number
-  result: 'big_win' | 'small_win' | 'draw' | 'small_loss' | 'big_loss'
+  result: MatchResult
   army_list: string | null
   mission: string | null
   event_name: string | null
@@ -37,8 +49,8 @@ export interface Match {
   opponent_army_list: string | null
   deployment_type: string | null
   table_number: number | null
-  normal_points_for: number | null
-  normal_points_against: number | null
+  team_match_id: string | null
+  prediction: Prediction | null
 }
 
 export interface NewsPost {
