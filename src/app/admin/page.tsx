@@ -997,19 +997,29 @@ function MatchEditor({
 
 function TeamMatchesTab() {
   const [teamMatches, setTeamMatches] = useState<TeamMatch[]>([])
+  const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
   const [showEditor, setShowEditor] = useState(false)
   const [editingTeamMatch, setEditingTeamMatch] = useState<TeamMatch | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
-    fetchTeamMatches()
+    fetchData()
   }, [])
+
+  async function fetchData() {
+    await Promise.all([fetchTeamMatches(), fetchTeams()])
+  }
 
   async function fetchTeamMatches() {
     const { data } = await supabase.from('team_matches').select('*').order('date', { ascending: false })
     if (data) setTeamMatches(data as TeamMatch[])
     setLoading(false)
+  }
+
+  async function fetchTeams() {
+    const { data } = await supabase.from('teams').select('*').order('name')
+    if (data) setTeams(data as Team[])
   }
 
   async function deleteTeamMatch(id: string) {
@@ -1083,6 +1093,7 @@ function TeamMatchesTab() {
       {showEditor && (
         <TeamMatchEditor
           teamMatch={editingTeamMatch}
+          teams={teams}
           onClose={() => {
             setShowEditor(false)
             setEditingTeamMatch(null)
@@ -1100,17 +1111,21 @@ function TeamMatchesTab() {
 
 function TeamMatchEditor({
   teamMatch,
+  teams,
   onClose,
   onSave,
 }: {
   teamMatch: TeamMatch | null
+  teams: Team[]
   onClose: () => void
   onSave: () => void
 }) {
   const [opponentTeam, setOpponentTeam] = useState(teamMatch?.opponent_team || '')
   const [date, setDate] = useState(teamMatch?.date ? new Date(teamMatch.date).toISOString().split('T')[0] : '')
-  const [drawDiff, setDrawDiff] = useState(teamMatch?.draw_diff?.toString() || '')
+  const [drawDiff, setDrawDiff] = useState(teamMatch?.draw_diff?.toString() || '10')
   const [loading, setLoading] = useState(false)
+  const [showNewTeam, setShowNewTeam] = useState(false)
+  const [newTeamName, setNewTeamName] = useState('')
   const supabase = createClient()
 
   async function handleSubmit(e: React.FormEvent) {
@@ -1120,7 +1135,7 @@ function TeamMatchEditor({
     const data = {
       opponent_team: opponentTeam,
       date: date,
-      draw_diff: drawDiff ? parseInt(drawDiff) : null,
+      draw_diff: drawDiff ? parseInt(drawDiff) : 10,
     }
 
     let error
@@ -1142,14 +1157,17 @@ function TeamMatchEditor({
 
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Opponent Team *</label>
-            <input
-              type="text"
+            <select
               value={opponentTeam}
               onChange={(e) => setOpponentTeam(e.target.value)}
               required
-              placeholder="e.g., Germany, France"
               className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
-            />
+            >
+              <option value="">Select a team</option>
+              {teams.map((team) => (
+                <option key={team.id} value={team.name}>{team.name}</option>
+              ))}
+            </select>
           </div>
 
           <div>
