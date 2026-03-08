@@ -723,6 +723,7 @@ function EventEditor({
 function MatchesTab() {
   const [matches, setMatches] = useState<Match[]>([])
   const [teamMatches, setTeamMatches] = useState<TeamMatch[]>([])
+  const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
   const [showEditor, setShowEditor] = useState(false)
   const [editingMatch, setEditingMatch] = useState<Match | null>(null)
@@ -731,6 +732,7 @@ function MatchesTab() {
   useEffect(() => {
     fetchMatches()
     fetchTeamMatches()
+    fetchPlayers()
   }, [])
 
   async function fetchMatches() {
@@ -742,6 +744,16 @@ function MatchesTab() {
   async function fetchTeamMatches() {
     const { data } = await supabase.from('team_matches').select('*').order('date', { ascending: false })
     if (data) setTeamMatches(data as TeamMatch[])
+  }
+
+  async function fetchPlayers() {
+    const { data } = await supabase.from('players').select('*').order('name', { ascending: true })
+    if (data) setPlayers(data as Player[])
+  }
+
+  function getPlayerName(playerId: string) {
+    const player = players.find(p => p.id === playerId)
+    return player?.name || playerId
   }
 
   async function deleteMatch(id: string) {
@@ -786,7 +798,7 @@ function MatchesTab() {
                 const teamMatch = teamMatches.find(tm => tm.id === match.team_match_id)
                 return (
                   <tr key={match.id}>
-                    <td className="px-4 py-3 text-white">{match.player_id}</td>
+                    <td className="px-4 py-3 text-white">{getPlayerName(match.player_id)}</td>
                     <td className="px-4 py-3 text-zinc-400">{teamMatch ? `${teamMatch.opponent_team} - ${new Date(teamMatch.date).toLocaleDateString()}` : '-'}</td>
                     <td className="px-4 py-3 text-emerald-400">{match.prediction || '-'}</td>
                     <td className="px-4 py-3 text-zinc-400">{match.result || '-'}</td>
@@ -821,6 +833,7 @@ function MatchesTab() {
         <MatchEditor
           match={editingMatch}
           teamMatches={teamMatches}
+          players={players}
           onClose={() => {
             setShowEditor(false)
             setEditingMatch(null)
@@ -839,11 +852,13 @@ function MatchesTab() {
 function MatchEditor({
   match,
   teamMatches,
+  players,
   onClose,
   onSave,
 }: {
   match: Match | null
   teamMatches: TeamMatch[]
+  players: Player[]
   onClose: () => void
   onSave: () => void
 }) {
@@ -890,14 +905,20 @@ function MatchEditor({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Player ID *</label>
-              <input
-                type="text"
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Player *</label>
+              <select
                 value={playerId}
                 onChange={(e) => setPlayerId(e.target.value)}
                 required
                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
-              />
+              >
+                <option value="">Select Player</option>
+                {players.map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
